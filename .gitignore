@@ -1,0 +1,8 @@
+.idea/
+*.egg-info/
+__pycache__/
+venv/
+runtime_data/
+.pytest_cache/
+*.log
+.coverage
