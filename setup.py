@@ -1,5 +1,6 @@
 import ctypes
 import os
+import struct
 import sys
 import traceback
 import winreg
@@ -36,7 +37,7 @@ def allow_ansi_console_color_if_needed():
         print('Allow ansi console color manually')
 
 
-def is_tlbinf32_installed():
+def is_tlbinf32_registered():
     root = winreg.ConnectRegistry(None, winreg.HKEY_CLASSES_ROOT)
     try:
         winreg.OpenKey(root, "TLI.TLIApplication")
@@ -47,7 +48,11 @@ def is_tlbinf32_installed():
         root.Close()
 
 
-def install_tlbinf32():
+def register_tlbinf32():
+    bits = struct.calcsize('P') * 8
+    if bits != 32:
+        print(termcolor.colored('Python is 64 bit. Register tlbinf32 manually', color='red'))
+        return None
     try:
         dll_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tlbinf32.dll')
         dll = ctypes.OleDLL(dll_path)
@@ -58,9 +63,9 @@ def install_tlbinf32():
         raise exception
 
 
-def install_tlbinf32_if_needed():
-    if not is_tlbinf32_installed():
-        install_tlbinf32()
+def register_tlbinf32_if_needed():
+    if not is_tlbinf32_registered():
+        register_tlbinf32()
         print('tlbinf32 Installed')
     else:
         print('tlbinf32 Already Installed')
@@ -88,7 +93,7 @@ def install_kernel_spec_if_needed():
 
 
 allow_ansi_console_color_if_needed()
-install_tlbinf32_if_needed()
+register_tlbinf32_if_needed()
 install_kernel_spec_if_needed()
 
 with open('requirements.txt', 'r') as f:

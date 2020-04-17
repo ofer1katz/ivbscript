@@ -12,7 +12,7 @@ git lfs pull
 python setup.py develop
 ```
 ### **notice:*
-*during installation editing registry to allow ANSI console color
+*during installation registry will be edited to allow ANSI console color*
 
 ```shell script
 [HKEY_CURRENT_USER\Console]
@@ -21,7 +21,7 @@ python setup.py develop
 
 *during installation com dll "tlbinf32.dll" (TLI.TLIApplication) will be registered if not registered already.*
 
-*regsvr32.exe can be used to manually register/unregister*
+*%systemroot%\SysWOW64\regsvr32.exe can be used to manually register/unregister*
 
 ---
 
@@ -31,6 +31,22 @@ python setup.py develop
 ```shell script
 jupyter console --kernel vbscript
 ```
+
+If you are having this error:
+```python
+Unhandled exception in event loop:
+  File "c:\users\USER\appdata\local\programs\python\python38-32\lib\asyncio\proactor_events.py", line 768, in _loop_self_reading
+    f.result()  # may raise
+  File "c:\users\USER\appdata\local\programs\python\python38-32\lib\asyncio\windows_events.py", line 808, in _poll
+    value = callback(transferred, key, ov)
+  File "c:\users\USER\appdata\local\programs\python\python38-32\lib\asyncio\windows_events.py", line 457, in finish_recv
+    raise ConnectionResetError(*exc.args)
+
+Exception [WinError 995] The I/O operation has been aborted because of either a thread exit or an application request
+Press ENTER to continue...
+```
+Take a look at the following workaround:
+https://github.com/ipython/ipython/issues/12049#issuecomment-586544339
 
 # Development
 ### Install development requirements
