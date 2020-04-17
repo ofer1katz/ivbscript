@@ -12,6 +12,12 @@ git lfs pull
 python setup.py develop
 ```
 ### **notice:*
+*during installation editing registry to allow ANSI console color
+
+```shell script
+[HKEY_CURRENT_USER\Console]
+"VirtualTerminalLevel"=dword:00000001
+```
 
 *during installation com dll "tlbinf32.dll" (TLI.TLIApplication) will be registered if not registered already.*
 

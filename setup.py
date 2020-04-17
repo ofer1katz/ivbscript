@@ -12,6 +12,30 @@ from ivbscript import __version__
 from ivbscript.kernel import VBScriptKernel
 
 
+class RegistryWrongValue(Exception):
+    pass
+
+
+def allow_ansi_console_color_if_needed():
+    root = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    key = winreg.OpenKey(root, 'Console')
+    value_name = 'VirtualTerminalLevel'
+    value_type = winreg.REG_DWORD
+    value = 1
+    try:
+        try:
+            reg_value, reg_type = winreg.QueryValueEx(key, value_name)
+            if reg_value != value or reg_type != value_type:
+                winreg.DeleteValue(key, value_name)
+                raise RegistryWrongValue
+        except (FileNotFoundError, RegistryWrongValue):
+            winreg.SetValueEx(key, value_name, None, value_type, value)
+
+    except PermissionError as exception:
+        print(''.join(traceback.format_exception(None, exception, None)))
+        print('Allow ansi console color manually')
+
+
 def is_tlbinf32_installed():
     root = winreg.ConnectRegistry(None, winreg.HKEY_CLASSES_ROOT)
     try:
@@ -25,7 +49,8 @@ def is_tlbinf32_installed():
 
 def install_tlbinf32():
     try:
-        dll = ctypes.OleDLL('tlbinf32.dll')
+        dll_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tlbinf32.dll')
+        dll = ctypes.OleDLL(dll_path)
         dll.DllRegisterServer()
     except OSError as exception:
         print(termcolor.colored(''.join(traceback.format_exception(None, exception, None)), color='red'))
@@ -62,6 +87,7 @@ def install_kernel_spec_if_needed():
         print('Kernel Already Installed')
 
 
+allow_ansi_console_color_if_needed()
 install_tlbinf32_if_needed()
 install_kernel_spec_if_needed()
 
