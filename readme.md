@@ -1,17 +1,17 @@
-#iVBScript
+# iVBScript
 
 Interactive VBScript
 
 Jupyter kernel implementation for VBScript
 
-#Installation*
+# Installation*
 ```shell script
 git clone https://github.com/ofer1katz/ivbscript.git 
 cd ivbscript
 git lfs pull 
 python setup.py develop
 ```
-###**notice:*
+### **notice:*
 
 *during installation com dll "tlbinf32.dll" (TLI.TLIApplication) will be registered if not registered already.*
 
@@ -21,25 +21,25 @@ python setup.py develop
 
 *kernel specs will be copied to `os.path.join(os.path.abspath(sys.prefix), 'share', 'jupyter', 'kernels', 'vbscript')`*
 
-#Usage
+# Usage
 ```shell script
 jupyter console --kernel vbscript
 ```
 
-#Development
-###Install development requirements
+# Development
+### Install development requirements
 ```shell script
 pip install -r requirements_dev.txt -U --upgrade-strategy eager
 ```
 
-####Tests
+#### Tests
 ```shell script
 coverage erase
 coverage run --source=. --omit="*\tests\*" -m pytest
 coverage report -m
 ```
 
-####Code Analytics
+#### Code Analytics
 ```shell script
 prospector --strictness veryhigh
 # Analyze the given Python modules and compute Cyclomatic Complexity (CC).
@@ -52,7 +52,7 @@ radon raw .
 radon hal .
 ```
 
-###TODO:
+### TODO:
 - [ ] test coverage
 - [ ] using pipes instead of files for communication with vbscript
 - [ ] better implementation of exit/quit (via jupyter)
