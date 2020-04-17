@@ -224,10 +224,6 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     def _terminate_app(self):
         self.cscript.terminate()
         cur_process = psutil.Process()
-        parent_processes = cur_process.parents()
-        oldest_to_kill = [process for process in parent_processes if process.name() == 'jupyter.exe'][0]
-
-        index = parent_processes.index(oldest_to_kill)
-        for process in parent_processes[:index + 1]:
-            process.terminate()
+        parent_process = cur_process.parent()
+        parent_process.terminate()
         cur_process.terminate()

@@ -19,7 +19,6 @@ class TestHistory:
             pass
 
     def test_empty_history(self):
-        assert self.history.session == 1, "Should be first session (1)"
         assert len(self.history.tail(10)) == 0, "DB Should be empty"
 
     def test_reconnection(self):
@@ -33,7 +32,7 @@ class TestHistory:
             self.history.append(*history_entity)
         assert len(self.history.tail(history_entities_num * 10)) == history_entities_num, \
             f"History Should contain {history_entities_num} rows"
-        expected_tail = [(self.history.session, *history_entity) for history_entity in history_entities]
+        expected_tail = [(self.history.session_id, *history_entity) for history_entity in history_entities]
         tail = self.history.tail(history_entities_num)
         assert tail == expected_tail, 'expected_tail != tail'
 

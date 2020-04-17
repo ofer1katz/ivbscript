@@ -29,6 +29,10 @@ python setup.py develop
 
 # Usage
 ```shell script
+ivbscript
+```
+or
+```shell script
 jupyter console --kernel vbscript
 ```
 
@@ -78,7 +82,6 @@ radon hal .
 - [ ] test coverage
 - [ ] using pipes instead of files for communication with vbscript
 - [ ] better implementation of exit/quit (via jupyter)
-- [ ] create launch shortcut instead of `jupyter console --kernel vbscript`
 - [ ] completion using - `Tab` (`do_complete`)
 - [ ] use `do_inspect()` for inspect
 - [ ] inspect levels support - `?`\\`??` 

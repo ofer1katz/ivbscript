@@ -52,15 +52,15 @@ def register_tlbinf32():
     bits = struct.calcsize('P') * 8
     if bits != 32:
         print(termcolor.colored('Python is 64 bit. Register tlbinf32 manually', color='red'))
-        return None
-    try:
-        dll_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tlbinf32.dll')
-        dll = ctypes.OleDLL(dll_path)
-        dll.DllRegisterServer()
-    except OSError as exception:
-        print(termcolor.colored(''.join(traceback.format_exception(None, exception, None)), color='red'))
-        print(termcolor.colored('check git lfs', color='red'))
-        raise exception
+    else:
+        try:
+            dll_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tlbinf32.dll')
+            dll = ctypes.OleDLL(dll_path)
+            dll.DllRegisterServer()
+        except OSError as exception:
+            print(termcolor.colored(''.join(traceback.format_exception(None, exception, None)), color='red'))
+            print(termcolor.colored('check git lfs', color='red'))
+            raise exception
 
 
 def register_tlbinf32_if_needed():
@@ -110,7 +110,7 @@ setup(
         "Operating System :: Windows"
     ],
     entry_points={
-        'console_scripts': []
+        'console_scripts': ['ivbscript=ivbscript.app:main']
     },
     install_requires=REQUIREMENTS,
     python_requires='>=3.8',
