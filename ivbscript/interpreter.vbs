@@ -7,7 +7,7 @@ Class Interpreter
     Private invokeKindPropertyGet, invokeKindFunction, invokeKindPropertyPut, invokeKindPropertyPutRef
     Private cmdFilePath, retFilePath
     Private cmdFile, retFile, logFile, debugPath
-    Private fso, WshShell
+    Private fso, WshShell, typeDetails
 
     Private Sub Class_Initialize()
         ForReading = 1
@@ -23,6 +23,30 @@ Class Interpreter
         retFilePath = WshShell.ExpandEnvironmentStrings("%IVBS_RET_PATH%")
         Set fso = CreateObject("Scripting.FileSystemObject")
         Set logFile = fso.OpenTextFile(debugPath, ForWriting, True)
+        Set typeDetails = CreateObject("Scripting.Dictionary")
+        ' Add all values.
+        typeDetails.add vbEmpty, "vbEmpty (uninitialized variable)" ' ; =0
+        typeDetails.add vbNull, "vbNull (value unknown)" ' ; =1
+        typeDetails.add vbInteger, "vbInteger" ' Short? ; =2
+        typeDetails.add vbLong, "vbLong" ' Integer? ; =3
+        typeDetails.add vbSingle, "vbSingle" ' ; =4
+        typeDetails.add vbDouble, "vbDouble" ' ; =5
+        typeDetails.add vbCurrency, "vbCurrency" ' ; =6
+        typeDetails.add vbDate, "vbDate" ' ; =7
+        typeDetails.add vbString, "vbString" ' ; =8
+        typeDetails.add vbObject, "vbObject" ' ; =9
+        typeDetails.add 10, "Exception" ' ; =10
+        typeDetails.add vbBoolean, "vbBoolean" ' ; =11
+        typeDetails.add vbVariant, "vbVariant" ' ; =12
+        typeDetails.add 13, "DataObject" ' ; =13
+        typeDetails.add vbDecimal, "vbDecimal" ' ; =14
+        typeDetails.add vbByte, "vbByte" ' ; =17
+        typeDetails.add 18, "vbChar" ' ; =18
+        typeDetails.add 19, "ULong" ' ; =19
+        typeDetails.add 20, "Long" ' really Long? ; =20
+        typeDetails.add 24, "(void)" ' ; =24
+        typeDetails.add 36, "UserDefinedType" ' ; =36
+
         logFile.WriteLine cmdFilePath
         logFile.WriteLine retFilePath
     End Sub
@@ -32,6 +56,7 @@ Class Interpreter
         Set logFile = Nothing
         Set fso = Nothing
         Set WshShell = Nothing
+        Set typeDetails = Nothing
     End Sub
 
     Public Sub Run()
@@ -82,30 +107,6 @@ Class Interpreter
     End Sub
 
     Private Function GetVarTypeName(var)
-        Dim typeDetails: Set typeDetails = CreateObject("Scripting.Dictionary")
-        ' Add all values.
-        typeDetails.add vbEmpty, "vbEmpty (uninitialized variable)" ' ; =0
-        typeDetails.add vbNull, "vbNull (value unknown)" ' ; =1
-        typeDetails.add vbInteger, "vbInteger" ' Short? ; =2
-        typeDetails.add vbLong, "vbLong" ' Integer? ; =3
-        typeDetails.add vbSingle, "vbSingle" ' ; =4
-        typeDetails.add vbDouble, "vbDouble" ' ; =5
-        typeDetails.add vbCurrency, "vbCurrency" ' ; =6
-        typeDetails.add vbDate, "vbDate" ' ; =7
-        typeDetails.add vbString, "vbString" ' ; =8
-        typeDetails.add vbObject, "vbObject" ' ; =9
-        typeDetails.add 10, "Exception" ' ; =10
-        typeDetails.add vbBoolean, "vbBoolean" ' ; =11
-        typeDetails.add vbVariant, "vbVariant" ' ; =12
-        typeDetails.add 13, "DataObject" ' ; =13
-        typeDetails.add vbDecimal, "vbDecimal" ' ; =14
-        typeDetails.add vbByte, "vbByte" ' ; =17
-        typeDetails.add 18, "vbChar" ' ; =18
-        typeDetails.add 19, "ULong" ' ; =19
-        typeDetails.add 20, "Long" ' really Long? ; =20
-        typeDetails.add 24, "(void)" ' ; =24
-        typeDetails.add 36, "UserDefinedType" ' ; =36
-
         If typeDetails.Exists(var) Then
             GetVarTypeName = typeDetails(var)
         ' Why 8192?
