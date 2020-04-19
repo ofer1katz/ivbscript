@@ -216,10 +216,14 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     # pylint: enable=too-many-arguments
 
     def do_complete(self, code, cursor_pos):
-        pass
+        return {'matches': [],
+                'cursor_end': cursor_pos,
+                'cursor_start': cursor_pos,
+                'metadata': {},
+                'status': 'ok'}
 
     def do_inspect(self, code, cursor_pos, detail_level=0):
-        pass
+        return {'status': 'ok', 'data': {}, 'metadata': {}, 'found': False}
 
     def _terminate_app(self):
         self.cscript.terminate()
