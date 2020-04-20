@@ -82,8 +82,9 @@ radon hal .
 - [ ] test coverage
 - [ ] using pipes instead of files for communication with vbscript
 - [ ] better implementation of exit/quit (via jupyter)
+- [ ] evaluate expressions
 - [ ] completion using - `Tab` (`do_complete`)
 - [ ] use `do_inspect()` for inspect
 - [ ] inspect levels support - `?`\\`??` 
-- [ ] paste into terminal - `%paste`
+- [ ] paste into terminal - `%paste`\\`Ctrl + v`
 - [ ] clear terminal - `cls`\\`clear`

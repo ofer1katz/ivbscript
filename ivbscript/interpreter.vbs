@@ -52,7 +52,6 @@ Class Interpreter
     End Sub
 
     Private Sub Class_Terminate()
-        logFile.WriteLine Err.Number & " " & Err.Description
         Set logFile = Nothing
         Set fso = Nothing
         Set WshShell = Nothing
@@ -61,11 +60,9 @@ Class Interpreter
 
     Public Sub Run()
         On Error Resume Next
-        Dim cmd, response, data, stderr, stdout, inspect
+        Dim cmd, response, stderr, inspect
         Do
             stderr = ""
-            stdout = ""
-            data = ""
             While fso.FileExists(cmdFilePath) = False
                 WScript.Sleep(500)
             Wend
@@ -83,24 +80,15 @@ Class Interpreter
                 cmd = "oInterpreter.HandleInspect " & Mid(cmd, 1, Len(cmd) - 1)
                 logFile.WriteLine cmd
             End If
-            logFile.WriteLine Err.Number & " (.1) " & Err.Description
             Err.Clear()
             ExecuteGlobal cmd
             If Err.Number <> 0 Then
-                stderr = "Err.Description: " & Err.Description & ".\nErr.Number: " & Err.Number
+                stderr = "Err.Description: " & Err.Description & "." & vbNewLine & "Err.Number: " & Err.Number
                 Err.Clear()
             End If
-            If inspect = False Then
-                data = Eval(cmd)
-                If Err.Number = 0 And Not IsEmpty(data) Then
-                    stderr = ""
-                End If
-            End If
-            response = "{""stderr"": """ & stderr & """, ""stdout"": """ & stdout & """, ""data"": """ & data & """}"
-            logFile.WriteLine response
-            logFile.WriteLine Err.Number & " " & Err.Description
+            logFile.WriteLine stderr
             Set retFile = fso.OpenTextFile(retFilePath, ForWriting, True)
-            retFile.Write(response)
+            retFile.Write(stderr)
             retFile.Close()
             Set retFile = Nothing
         Loop

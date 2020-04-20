@@ -73,7 +73,7 @@ def register_tlbinf32_if_needed():
 
 def is_kernel_spec_installed():
     try:
-        KernelSpecManager().get_kernel_spec(VBScriptKernel.implementation)
+        KernelSpecManager().get_kernel_spec(VBScriptKernel.language)
         return True
     except NoSuchKernel:
         return False
@@ -81,7 +81,7 @@ def is_kernel_spec_installed():
 
 def install_kernel_spec():
     default_spec_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'defaultspec')
-    KernelSpecManager().install_kernel_spec(default_spec_dir, VBScriptKernel.implementation, prefix=sys.prefix)
+    KernelSpecManager().install_kernel_spec(default_spec_dir, VBScriptKernel.language, prefix=sys.prefix)
 
 
 def install_kernel_spec_if_needed():

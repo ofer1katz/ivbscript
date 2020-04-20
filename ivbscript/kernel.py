@@ -1,7 +1,6 @@
 """
 Jupyter kernel implementation for VBScript
 """
-import json
 import os
 import random
 import re
@@ -24,7 +23,8 @@ class VBScriptKernel(Kernel):
     """
 
     """
-    implementation = 'vbscript'
+    implementation = 'iVBScript'
+    language = "vbscript"
     implementation_version = __version__
     banner = termcolor.colored(r'''
 d8b 888     888 888888b.    .d8888b.                   d8b          888
@@ -60,7 +60,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     @property
     def language_info(self):
         return {
-            "name": "vbscript",
+            "name": self.language,
             "file_extension": ".vbs",
             "pygments_lexer": "vbscript",
         }
@@ -77,12 +77,12 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         self.cscript = None
         pid = os.getpid()
         self.stdout_pos = 0
-        self.stdout = os.path.join(runtime_data_dir, f'stdout-{pid}.txt')
-        self.output = os.path.join(runtime_data_dir, f'{pid}.output')
-        self.input = os.path.join(runtime_data_dir, f'{pid}.input')
+        self.stdout_file_path = os.path.join(runtime_data_dir, f'{pid}.stdout')
+        self.stderr_file_path = os.path.join(runtime_data_dir, f'{pid}.stderr')
+        self.input_file_path = os.path.join(runtime_data_dir, f'{pid}.input')
         debug_log = os.path.join(runtime_data_dir, f'{pid}.log')
 
-        os.environ.update({'IVBS_CMD_PATH': self.input, 'IVBS_RET_PATH': self.output,
+        os.environ.update({'IVBS_CMD_PATH': self.input_file_path, 'IVBS_RET_PATH': self.stderr_file_path,
                            'IVBS_DEBUG_PATH': debug_log})
         self.run()
 
@@ -95,7 +95,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
 
     def run(self):
         self.history_manager.connect()
-        with open(self.stdout, 'w') as stdout_file:
+        with open(self.stdout_file_path, 'w') as stdout_file:
             self.cscript = Popen([
                 self.INTERPRETER,
                 '//nologo',
@@ -103,7 +103,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
             ], stdout=stdout_file, stderr=stdout_file, shell=False, env=os.environ.copy())
 
     def _get_stdout(self):
-        with open(self.stdout, 'r') as stdout_file:
+        with open(self.stdout_file_path, 'r') as stdout_file:
             stdout_file.seek(self.stdout_pos)
             data = stdout_file.read()
             self.stdout_pos = stdout_file.tell()
@@ -118,19 +118,19 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
             return {'stdout': '', 'stderr': (''.join(traceback.format_exception(None, exception, None)))}
 
     def _send_command(self, code):
-        if os.path.exists(self.output):
-            os.remove(self.output)
-        with open(self.input, 'w', encoding='utf-8') as input_file:
+        if os.path.exists(self.stderr_file_path):
+            os.remove(self.stderr_file_path)
+        with open(self.input_file_path, 'w', encoding='utf-8') as input_file:
             input_file.write("\n".join(code.splitlines()))
 
     def _handle_vbscript_command(self, code):
         self._send_command(code)
-        while not os.path.exists(self.output):
+        while not os.path.exists(self.stderr_file_path):
             time.sleep(1)
-
-        with open(self.output, 'r', encoding='utf-8') as output_file:
-            output = json.loads(output_file.read())
-        os.remove(self.output)
+        output = {}
+        with open(self.stderr_file_path, 'r', encoding='utf-8') as stderr_file:
+            output['stderr'] = stderr_file.read()
+        os.remove(self.stderr_file_path)
         output['stdout'] = self._get_stdout()
         return output
 
