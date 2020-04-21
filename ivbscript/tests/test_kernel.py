@@ -22,6 +22,8 @@ class TestKernel:
         ('Sub x WScript.Echo 1 End Sub Function y() y = 2 End Function', True, False),
         ('Function x()', False, True),
         ('Function x()\n\tWScript.Echo 1\nEnd Function', True, False),
+        ('Function x()\n\tWScript.Echo 1\n\n', True, False),
+        ('Function x() WScript.Echo 1 _', False, False),
         pytest.param(None, True, False, marks=pytest.mark.xfail),
         pytest.param('', True, True, marks=pytest.mark.xfail)
     ])
@@ -64,3 +66,11 @@ class TestKernel:
                                     mocked_function.assert_called()
                                     return
         assert False, "Code routing failed. Code wasn't handled"
+
+    def test_do_apply(self):
+        with pytest.raises(NotImplementedError):
+            self.kernel.do_apply(content=None, bufs=None, msg_id=None, reply_metadata=None)
+
+    def test_do_clear(self):
+        with pytest.raises(NotImplementedError):
+            self.kernel.do_clear()

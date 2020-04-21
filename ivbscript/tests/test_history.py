@@ -1,6 +1,8 @@
+from unittest import mock
+
 import pytest
 
-from ..history import DBAlreadyConnected, DBNotConnected, HistoryManager
+from ..history import DBAlreadyConnected, DBNotConnected, HistoryManager, FailedGenerateSessionId
 
 
 class TestHistory:
@@ -9,7 +11,6 @@ class TestHistory:
     def setup_method(self, method):
         in_memory_path = ":memory:"
         self.history = HistoryManager(in_memory_path)
-        self.history.connect()
 
     def teardown_method(self, method):
         try:
@@ -19,13 +20,16 @@ class TestHistory:
             pass
 
     def test_empty_history(self):
+        self.history.connect()
         assert len(self.history.tail(10)) == 0, "DB Should be empty"
 
     def test_reconnection(self):
+        self.history.connect()
         with pytest.raises(DBAlreadyConnected):
             self.history.connect()
 
     def test_history_io(self):
+        self.history.connect()
         history_entities_num = 10
         history_entities = [(i, f'some code: #{i}') for i in range(history_entities_num)]
         for history_entity in history_entities:
@@ -37,6 +41,12 @@ class TestHistory:
         assert tail == expected_tail, 'expected_tail != tail'
 
     def test_multiple_disconnections(self):
+        self.history.connect()
         self.history.disconnect()
         with pytest.raises(DBNotConnected):
             self.history.disconnect()
+
+    def test_session_exists(self):
+        with mock.patch.object(HistoryManager, 'is_session_exists', return_value=True) as is_session_exists_mock:
+            with pytest.raises(FailedGenerateSessionId):
+                self.history.connect()
