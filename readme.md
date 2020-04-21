@@ -70,7 +70,7 @@ pip install -r requirements_dev.txt -U --upgrade-strategy eager
 #### Tests
 ```shell script
 coverage erase
-coverage run --source=. --omit="*\tests\*" -m pytest
+coverage run --source=. --omit="*\tests\*" -m pytest -v -s
 coverage report -m
 ```
 

@@ -1,3 +1,4 @@
+import os
 from unittest import mock
 
 import pytest
@@ -25,8 +26,6 @@ class TestKernel:
         pytest.param('', True, True, marks=pytest.mark.xfail)
     ])
     def test_is_complete(self, code: str, is_complete: bool, indent: bool):
-        print(self.kernel)
-        print(self.kernel.history_manager)
         status = 'complete' if is_complete else 'incomplete'
         assert not (indent and is_complete), 'cant be both completed and indent'
         expected = {'status': status}
@@ -34,3 +33,34 @@ class TestKernel:
             expected.update({'indent': self.kernel.incomplete_indent})
         results = self.kernel.do_is_complete(code)
         assert results == expected, f'code: {code}, expected: {expected}, results: {results}'
+
+    @pytest.mark.parametrize("code,function", [
+        ('exit', VBScriptKernel._terminate_app),
+        ('!whoami', VBScriptKernel._handle_command_line_code),
+        ('%file', VBScriptKernel._handle_magic),
+        ('Dim i: i = 1', VBScriptKernel._handle_vbscript_command),
+        ('cls', os.system),
+        pytest.param('!cls', os.system, marks=pytest.mark.xfail),
+        pytest.param('whoami', VBScriptKernel._handle_command_line_code, marks=pytest.mark.xfail),
+        pytest.param('cls', os.remove, marks=pytest.mark.xfail)
+    ])
+    def test_handle_code_routing(self, code, function):
+
+        self.kernel._terminate_app = mock.MagicMock()
+        self.kernel._handle_command_line_code = mock.MagicMock()
+        with mock.patch.object(self.kernel, '_handle_command_line_code') as _handle_command_line_code_mock:
+            with mock.patch.object(self.kernel, '_handle_vbscript_command') as _handle_vbscript_command_mock:
+                with mock.patch.object(self.kernel, '_terminate_app') as _terminate_app_mock:
+                    with mock.patch.object(self.kernel, '_handle_magic') as _handle_magic_mock:
+                        with mock.patch.object(os, 'system') as os_system_mock:
+                            mocked_functions = [_terminate_app_mock,
+                                                _handle_command_line_code_mock,
+                                                _handle_magic_mock,
+                                                _handle_vbscript_command_mock,
+                                                os_system_mock]
+                            self.kernel._handle_code(code)
+                            for mocked_function in mocked_functions:
+                                if mocked_function._mock_name == function.__name__:
+                                    mocked_function.assert_called()
+                                    return
+        assert False, "Code routing failed. Code wasn't handled"
