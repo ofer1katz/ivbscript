@@ -36,7 +36,15 @@ or
 jupyter console --kernel vbscript
 ```
 
-If you are having this error:
+#### Special Commands
+- `cls/clear` - clear console
+- `exit/exit()/quit/quit()` - exit iVBScript
+- `!<command>` - execute a child program in a new process
+- `<variable>?` - inspect `<variable>`
+- `%reset` - reset console
+- `%file <file_path>` - read `<file_path>` and run the content as VBScript code
+
+####If you are having this error:
 ```python
 Unhandled exception in event loop:
   File "c:\users\USER\appdata\local\programs\python\python38-32\lib\asyncio\proactor_events.py", line 768, in _loop_self_reading
@@ -85,6 +93,5 @@ radon hal .
 - [ ] evaluate expressions
 - [ ] completion using - `Tab` (`do_complete`)
 - [ ] use `do_inspect()` for inspect
-- [ ] inspect levels support - `?`\\`??` 
-- [ ] paste into terminal - `%paste`\\`Ctrl + v`
-- [ ] clear terminal - `cls`\\`clear`
+- [ ] inspect levels support - `?`/`??`
+- [ ] paste into terminal - `%paste`/`Ctrl + v`

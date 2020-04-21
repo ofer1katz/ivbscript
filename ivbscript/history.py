@@ -59,7 +59,7 @@ class HistoryManager:
         max_tries = 15
         while self.is_session_exists() and max_tries > 0:
             max_tries -= 1
-            self.session_id = uuid.uuid4()
+            self.session_id = self._generate_session_id()
 
         if self.is_session_exists():
             raise FailedGenerateSessionId

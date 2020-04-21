@@ -112,9 +112,12 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     def _handle_command_line_code(self, code):
         try:
             process = Popen(shlex.split(code), stderr=PIPE, stdout=PIPE)
-            stdout, stderr = process.communicate(timeout=self.COMMAND_LINE_TIMEOUT)
-            return {'stdout': stdout.decode('utf-8'), 'stderr': stderr.decode('utf-8')}
-        except (TimeoutExpired, FileNotFoundError) as exception:
+            try:
+                stdout, stderr = process.communicate(timeout=self.COMMAND_LINE_TIMEOUT)
+                return {'stdout': stdout.decode('utf-8'), 'stderr': stderr.decode('utf-8')}
+            finally:
+                process.terminate()
+        except (FileNotFoundError, TimeoutExpired) as exception:
             return {'stdout': '', 'stderr': (''.join(traceback.format_exception(None, exception, None)))}
 
     def _send_command(self, code):
@@ -134,18 +137,38 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         output['stdout'] = self._get_stdout()
         return output
 
+    def _handle_magic(self, code):
+        output = {}
+        command_parts = shlex.split(code)
+        if code.lower() == 'reset':
+            self.do_shutdown(True)
+        elif command_parts[0] == 'file':
+            if len(command_parts) != 2:
+                output['stderr'] = 'Usage: %file <file_path>'
+            else:
+                try:
+                    with open(command_parts[1], 'r') as code_file:
+                        output.update(self._handle_vbscript_command(code_file.read()))
+                except (FileNotFoundError, PermissionError, OSError) as exception:
+                    output['stderr'] = (''.join(traceback.format_exception(None, exception, None)))
+        return output
+
     # pylint: disable=too-many-arguments
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
+        output = {}
         self.history_manager.append(self.execution_count, code)
 
         if code.strip().lower() in ['exit', 'exit()', 'quit', 'quit()']:
             self._terminate_app()
-            return None
-
-        if code.strip().startswith('!'):
+        elif code.strip().lower() in ['cls', 'clear']:
+            os.system('cls')
+        elif code.strip().startswith('!'):
             output = self._handle_command_line_code(code.strip()[1:])
+        elif code.strip().startswith('%'):
+            output = self._handle_magic(code.strip()[1:])
         else:
             output = self._handle_vbscript_command(code)
+
         if not silent:
             if output.get('stdout', list()):
                 self.send_response(self.iopub_socket, 'stream', {'name': 'stdout', 'text': output['stdout']})
@@ -158,6 +181,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
                 self.send_response(self.iopub_socket, 'display_data',
                                    {'name': 'stdout',
                                     'data': {'text/plain': f'{out_prompt} {output["data"]}'}})
+
         return {'status': 'ok', 'execution_count': self.execution_count, 'payload': [], 'user_expressions': {}}
 
     # pylint: enable=too-many-arguments
@@ -168,13 +192,16 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     def _shutdown_cleanup(self):
         self.history_manager.disconnect()
         self._send_command('WScript.Quit')
-        time.sleep(5)
+        time.sleep(2)
         if self._is_interpreter_running():
             self.cscript.kill()
 
     def do_shutdown(self, restart):
         self._shutdown_cleanup()
-        return {'restart': False}
+        if restart:
+            self.execution_count = 0
+            self.run()
+        return {'restart': restart}
 
     def do_apply(self, content, bufs, msg_id, reply_metadata):
         """DEPRECATED"""
