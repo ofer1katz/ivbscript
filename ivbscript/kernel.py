@@ -12,6 +12,7 @@ from subprocess import PIPE, Popen, TimeoutExpired
 
 import psutil
 import termcolor
+import win32clipboard
 from ipykernel.kernelbase import Kernel
 
 from .history import HistoryManager
@@ -68,14 +69,14 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         assert find_executable(self.INTERPRETER), f'Could not find {self.INTERPRETER}'
-        self.history_manager = HistoryManager(self.get_history_path())
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         runtime_data_dir = os.path.join(os.getcwd(), 'runtime_data')
         if not os.path.exists(runtime_data_dir):
             os.mkdir(runtime_data_dir)
-
-        self.cscript = None
         pid = os.getpid()
+
+        self.history_manager = HistoryManager(self.get_history_path())
+        self.cscript = None
         self.stdout_pos = 0
         self.stdout_file_path = os.path.join(runtime_data_dir, f'{pid}.stdout')
         self.stderr_file_path = os.path.join(runtime_data_dir, f'{pid}.stderr')
@@ -140,24 +141,57 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     def _handle_magic(self, code):
         output = {}
         command_parts = shlex.split(code)
+        if not code:
+            output['stderr'] = f'No magic specified'
+            return output
         if code.lower() == 'reset':
             self.do_shutdown(True)
-        elif command_parts[0] == 'file':
+            return output
+        if code.lower() == 'paste':
+            return self._handle_paste()
+        if command_parts[0] == 'file':
             if len(command_parts) != 2:
                 output['stderr'] = 'Usage: %file <file_path>'
             else:
-                try:
-                    with open(command_parts[1], 'r') as code_file:
-                        output.update(self._handle_vbscript_command(code_file.read()))
-                except (FileNotFoundError, PermissionError, OSError) as exception:
-                    output['stderr'] = (''.join(traceback.format_exception(None, exception, None)))
+                return self._handle_file_execute(command_parts[1])
+
+        output['stderr'] = f'Invalid magic "{code}"'
         return output
 
-    # pylint: disable=too-many-arguments
-    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
+    def _handle_file_execute(self, file_path):
         output = {}
-        self.history_manager.append(self.execution_count, code)
+        try:
+            with open(file_path, 'r') as code_file:
+                output.update(self._handle_vbscript_command(code_file.read()))
+        except (FileNotFoundError, PermissionError, OSError) as exception:
+            output['stderr'] = (''.join(traceback.format_exception(None, exception, None)))
+        return output
 
+    def _handle_paste(self):
+        output = {}
+        win32clipboard.OpenClipboard()
+        try:
+            clipboard_code = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
+            text = clipboard_code
+            if not clipboard_code.endswith('\n'):
+                text += '\n'
+            text += "## -- End pasted text --\n"
+            if clipboard_code.lower().strip() != '%paste':
+                output.update(self._handle_code(clipboard_code))
+            else:
+                output['stderr'] = 'Ignored.'
+            output['stdout'] = text + output.get('stdout', '')
+        except win32clipboard.error as exception:
+            output['stderr'] = (''.join(traceback.format_exception(None, exception, None)))
+        finally:
+            try:
+                win32clipboard.CloseClipboard()
+            except win32clipboard.error:
+                pass
+        return output
+
+    def _handle_code(self, code):
+        output = {}
         if code.strip().lower() in ['exit', 'exit()', 'quit', 'quit()']:
             self._terminate_app()
         elif code.strip().lower() in ['cls', 'clear']:
@@ -168,6 +202,13 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
             output = self._handle_magic(code.strip()[1:])
         else:
             output = self._handle_vbscript_command(code)
+        return output
+
+    # pylint: disable=too-many-arguments
+    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
+
+        self.history_manager.append(self.execution_count, code)
+        output = self._handle_code(code)
 
         if not silent:
             if output.get('stdout', list()):

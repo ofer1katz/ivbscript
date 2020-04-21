@@ -43,6 +43,7 @@ jupyter console --kernel vbscript
 - `<variable>?` - inspect `<variable>`
 - `%reset` - reset console
 - `%file <file_path>` - read `<file_path>` and run the content as VBScript code
+- `%paste` - paste and execute
 
 ####If you are having this error:
 ```python
@@ -94,4 +95,4 @@ radon hal .
 - [ ] completion using - `Tab` (`do_complete`)
 - [ ] use `do_inspect()` for inspect
 - [ ] inspect levels support - `?`/`??`
-- [ ] paste into terminal - `%paste`/`Ctrl + v`
+- [ ] paste into terminal - `Ctrl + v`
