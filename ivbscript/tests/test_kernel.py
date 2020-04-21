@@ -1,4 +1,5 @@
 import os
+from typing import Callable, Dict
 from unittest import mock
 
 import pytest
@@ -46,7 +47,7 @@ class TestKernel:
         pytest.param('whoami', VBScriptKernel._handle_command_line_code, marks=pytest.mark.xfail),
         pytest.param('cls', os.remove, marks=pytest.mark.xfail)
     ])
-    def test_handle_code_routing(self, code, function):
+    def test_handle_code_routing(self, code: str, function: Callable[[str], Dict]):
 
         self.kernel._terminate_app = mock.MagicMock()
         self.kernel._handle_command_line_code = mock.MagicMock()

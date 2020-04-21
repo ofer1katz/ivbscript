@@ -37,7 +37,7 @@ def allow_ansi_console_color_if_needed():
         print('Allow ansi console color manually')
 
 
-def is_tlbinf32_registered():
+def is_tlbinf32_registered() -> bool:
     root = winreg.ConnectRegistry(None, winreg.HKEY_CLASSES_ROOT)
     try:
         winreg.OpenKey(root, "TLI.TLIApplication")
@@ -71,7 +71,7 @@ def register_tlbinf32_if_needed():
         print('tlbinf32 Already Installed')
 
 
-def is_kernel_spec_installed():
+def is_kernel_spec_installed() -> bool:
     try:
         KernelSpecManager().get_kernel_spec(VBScriptKernel.language)
         return True

@@ -2,7 +2,8 @@ from unittest import mock
 
 import pytest
 
-from ..history import DBAlreadyConnected, DBNotConnected, HistoryManager, FailedGenerateSessionId
+from ..history import (DBAlreadyConnected, DBNotConnected,
+                       FailedGenerateSessionId, HistoryManager)
 
 
 class TestHistory:
@@ -50,3 +51,4 @@ class TestHistory:
         with mock.patch.object(HistoryManager, 'is_session_exists', return_value=True) as is_session_exists_mock:
             with pytest.raises(FailedGenerateSessionId):
                 self.history.connect()
+            assert is_session_exists_mock.call_count != self.history.MAX_SESSION_ID_GENERATE_TRIES + 1

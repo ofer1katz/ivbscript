@@ -20,8 +20,9 @@ class HistoryManager:
     SQLite DB manager capable of retrieving and appending
     history to a database on disk
     """
+    MAX_SESSION_ID_GENERATE_TRIES = 15
 
-    def __init__(self, history_path):
+    def __init__(self, history_path: str):
         """
         :param history_path: Path to database (created if does not exist)
         :type history_path: string
@@ -56,9 +57,9 @@ class HistoryManager:
                                    """)
             self.history_db.commit()
 
-        max_tries = 15
-        while self.is_session_exists() and max_tries > 0:
-            max_tries -= 1
+        tries_left = self.MAX_SESSION_ID_GENERATE_TRIES
+        while self.is_session_exists() and tries_left > 0:
+            tries_left -= 1
             self.session_id = self._generate_session_id()
 
         if self.is_session_exists():
@@ -66,15 +67,18 @@ class HistoryManager:
 
     def is_session_exists(self):
         with closing(self.history_db.cursor()) as cursor:
-            result = cursor.execute("SELECT session_id FROM history where session_id = ? LIMIT 1", (self.session_id,)).fetchone()
+            result = cursor.execute("""SELECT session_id
+            FROM history
+            where session_id = ?
+            LIMIT 1""", (self.session_id,)).fetchone()
         return bool(result)
 
-    def append(self, line, source):
+    def append(self, line: int, source: str):
         self.history_db.execute("INSERT INTO history (session_id, line, source)"
                                 " VALUES (?,?,?)", (self.session_id, line, source))
         self.history_db.commit()
 
-    def tail(self, lines_back):
+    def tail(self, lines_back: int):
         with closing(self.history_db.cursor()) as cursor:
             return cursor.execute("""
             SELECT h.session_id, h.line, h.source

@@ -9,6 +9,7 @@ import time
 import traceback
 from distutils.spawn import find_executable
 from subprocess import PIPE, Popen, TimeoutExpired
+from typing import Dict
 
 import psutil
 import termcolor
@@ -103,14 +104,14 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
                 'interpreter.vbs'
             ], stdout=stdout_file, stderr=stdout_file, shell=False, env=os.environ.copy())
 
-    def _get_stdout(self):
+    def _get_stdout(self) -> str:
         with open(self.stdout_file_path, 'r') as stdout_file:
             stdout_file.seek(self.stdout_pos)
             data = stdout_file.read()
             self.stdout_pos = stdout_file.tell()
             return data
 
-    def _handle_command_line_code(self, code):
+    def _handle_command_line_code(self, code: str) -> Dict:
         try:
             process = Popen(shlex.split(code), stderr=PIPE, stdout=PIPE)
             try:
@@ -121,13 +122,13 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         except (FileNotFoundError, TimeoutExpired) as exception:
             return {'stdout': '', 'stderr': (''.join(traceback.format_exception(None, exception, None)))}
 
-    def _send_command(self, code):
+    def _send_command(self, code: str):
         if os.path.exists(self.stderr_file_path):
             os.remove(self.stderr_file_path)
         with open(self.input_file_path, 'w', encoding='utf-8') as input_file:
             input_file.write("\n".join(code.splitlines()))
 
-    def _handle_vbscript_command(self, code):
+    def _handle_vbscript_command(self, code: str) -> Dict:
         self._send_command(code)
         while not os.path.exists(self.stderr_file_path):
             time.sleep(1)
@@ -138,7 +139,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         output['stdout'] = self._get_stdout()
         return output
 
-    def _handle_magic(self, code):
+    def _handle_magic(self, code: str) -> Dict:
         output = {}
         command_parts = shlex.split(code)
         if not code:
@@ -158,7 +159,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         output['stderr'] = f'Invalid magic "{code}"'
         return output
 
-    def _handle_file_execute(self, file_path):
+    def _handle_file_execute(self, file_path: str) -> Dict:
         output = {}
         try:
             with open(file_path, 'r') as code_file:
@@ -167,7 +168,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
             output['stderr'] = (''.join(traceback.format_exception(None, exception, None)))
         return output
 
-    def _handle_paste(self):
+    def _handle_paste(self) -> Dict:
         output = {}
         win32clipboard.OpenClipboard()
         try:
@@ -190,7 +191,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
                 pass
         return output
 
-    def _handle_code(self, code):
+    def _handle_code(self, code: str) -> Dict:
         output = {}
         if code.strip().lower() in ['exit', 'exit()', 'quit', 'quit()']:
             self._terminate_app()
@@ -227,7 +228,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
 
     # pylint: enable=too-many-arguments
 
-    def _is_interpreter_running(self):
+    def _is_interpreter_running(self) -> bool:
         return not self.cscript.poll()
 
     def _shutdown_cleanup(self):
@@ -265,7 +266,7 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         return completed
 
     @staticmethod
-    def _statement_completed(code, start_pattern, end_pattern):
+    def _statement_completed(code: str, start_pattern: str, end_pattern: str) -> bool:
         flags = re.IGNORECASE
         code_lines = [line.strip() for line in code.splitlines()]
         found_start = any([re.search(start_pattern, line, flags) for line in code_lines])
