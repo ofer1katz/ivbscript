@@ -15,6 +15,7 @@ import psutil
 import termcolor
 import win32clipboard
 from ipykernel.kernelbase import Kernel
+from pygments.lexers import _vbscript_builtins
 
 from .history import HistoryManager
 
@@ -23,7 +24,7 @@ __version__ = '1.0.0'
 
 class VBScriptKernel(Kernel):
     """
-
+    VBScript Kernel class
     """
     implementation = 'iVBScript'
     language = "vbscript"
@@ -210,7 +211,6 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
 
         self.history_manager.append(self.execution_count, code)
         output = self._handle_code(code)
-
         if not silent:
             if output.get('stdout', list()):
                 self.send_response(self.iopub_socket, 'stream', {'name': 'stdout', 'text': output['stdout']})
@@ -285,14 +285,26 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     # pylint: enable=too-many-arguments
 
     def do_complete(self, code, cursor_pos):
-        return {'matches': [],
-                'cursor_end': cursor_pos,
-                'cursor_start': cursor_pos,
+        all_builtins = (_vbscript_builtins.BUILTIN_CONSTANTS
+                        + _vbscript_builtins.BUILTIN_FUNCTIONS
+                        + _vbscript_builtins.BUILTIN_VARIABLES
+                        + _vbscript_builtins.KEYWORDS
+                        + _vbscript_builtins.OPERATOR_WORDS)
+
+        # get relevant initial if is a function/sub argument/start of line/after a whitespace
+        search_results = re.search(r'(\s+|[&,\(])?(?P<initial>\w+)$', code[:cursor_pos])
+        initial = search_results.groupdict()['initial'] if search_results else ''
+
+        matches = list(filter(lambda x: x.lower().startswith(initial.lower()), all_builtins))
+
+        cursor_start = cursor_pos - len(initial)
+        cursor_end = cursor_pos
+
+        return {'matches': matches,
+                'cursor_end': cursor_end,
+                'cursor_start': cursor_start,
                 'metadata': {},
                 'status': 'ok'}
-
-    def do_inspect(self, code, cursor_pos, detail_level=0):
-        return {'status': 'ok', 'data': {}, 'metadata': {}, 'found': False}
 
     def _terminate_app(self):
         self.cscript.terminate()

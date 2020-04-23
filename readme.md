@@ -92,7 +92,7 @@ radon hal .
 - [ ] using pipes instead of files for communication with vbscript
 - [ ] better implementation of exit/quit (via jupyter)
 - [ ] evaluate expressions
-- [ ] completion using - `Tab` (`do_complete`)
+- [ ] complete session's variables/functions/etc. using - `Tab` (`do_complete`)
 - [ ] use `do_inspect()` for inspect
 - [ ] inspect levels support - `?`/`??`
 - [ ] paste into terminal - `Ctrl + v`

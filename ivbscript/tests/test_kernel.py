@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 from unittest import mock
 
 import pytest
@@ -67,6 +67,36 @@ class TestKernel:
                                     mocked_function.assert_called()
                                     return
         assert False, "Code routing failed. Code wasn't handled"
+
+    @pytest.mark.parametrize("code,cursor_pos,expected_matches,expected_cursor_start", [
+        ('En', 2, ['end'], 0),
+        ('WScript.Echo vbNe', 17, ['vbNewLine'], 13),
+        ('WScript.Echo "x" & vbNe', 23, ['vbNewLine'], 19),
+        ('WScript.Echo "x" &vbNe', 22, ['vbNewLine'], 18),
+        ('Foo("abc",vbNe', 14, ['vbNewLine'], 10),
+        ('Bar(vbNe', 8, ['vbNewLine'], 4),
+        ('b', 1, ['ByRef', 'ByVal'], 0),
+        ('b', 1, ['ByVal', 'ByRef'], 0),
+    ])
+    def test_do_complete(self, code: str, cursor_pos: int, expected_matches: List, expected_cursor_start: int):
+        """
+        :param expected_cursor_start: cursor_pos - completion's initial
+        :param expected_matches: a list of variables from pygments.lexers._vbscript_builtins' lists:
+                BUILTIN_CONSTANTS, BUILTIN_FUNCTIONS, BUILTIN_VARIABLES, KEYWORDS, OPERATOR_WORDS -
+                starts with the completion's initial (ignored case).
+        """
+
+        output = self.kernel.do_complete(code, cursor_pos)
+        output['matches'].sort()
+        expected_matches.sort()
+        expected = {
+            'matches': expected_matches,
+            'cursor_end': cursor_pos,
+            'cursor_start': expected_cursor_start,
+            'metadata': {},
+            'status': 'ok'
+        }
+        assert output == expected
 
     def test_do_apply(self):
         with pytest.raises(NotImplementedError):

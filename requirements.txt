@@ -1,3 +1,4 @@
+pygments
 psutil
 termcolor
 ipykernel
