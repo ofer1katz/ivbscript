@@ -60,7 +60,7 @@ Class Interpreter
 
     Public Sub Run()
         On Error Resume Next
-        Dim cmd, response, stderr, inspect
+        Dim cmd, response, stderr
         Do
             stderr = ""
             While fso.FileExists(cmdFilePath) = False
@@ -71,15 +71,9 @@ Class Interpreter
             cmdFile.Close()
             Set cmdFile = Nothing
             fso.DeleteFile cmdFilePath, True
-            inspect = False
             cmd = RTrim(cmd)
             logFile.WriteLine cmd
             logFile.WriteLine Mid(cmd, Len(cmd), 1)
-            If Mid(cmd, Len(cmd), 1) = "?" Then
-                inspect = True
-                cmd = "oInterpreter.HandleInspect " & Mid(cmd, 1, Len(cmd) - 1)
-                logFile.WriteLine cmd
-            End If
             Err.Clear()
             ExecuteGlobal cmd
             If Err.Number <> 0 Then

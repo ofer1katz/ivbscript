@@ -8,6 +8,7 @@ import shlex
 import time
 import traceback
 from distutils.spawn import find_executable
+from enum import Enum
 from subprocess import PIPE, Popen, TimeoutExpired
 from typing import Dict
 
@@ -46,16 +47,16 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
     COMMAND_LINE_TIMEOUT = 15
     incomplete_indent = '  '
     completion_regexes = {
-        'sub': {'start_pattern': r'(^|\s)((private|public)\s+)?sub(\s+)[a-z_][a-z0-9_]*(\(.+\))?',
+        'sub': {'start_pattern': r'(^|\s)((private|public)\s+)?sub(\s+)[a-z_][a-z0-9_]*\s*(\(.+\))?',
                 'end_pattern': r'(^|\s)end(\s+)sub(\s|$)'},
-        'function': {'start_pattern': r'(^|\s)((private|public)\s+)?function(\s+)[a-z_][a-z0-9_]*(\(.+\))?',
+        'function': {'start_pattern': r'(^|\s)((private|public)\s+)?function(\s+)[a-z_][a-z0-9_]*\s*(\(.+\))?',
                      'end_pattern': r'(^|\s)end(\s+)function(\s|$)'},
         'if': {'start_pattern': r'(^|\s)if(\s+).+(\s+)then(\s|$)', 'end_pattern': r'(^|\s)end(\s+)if(\s|$)'},
         'select': {'start_pattern': r'(^|\s)select(\s+)case', 'end_pattern': r'(^|\s)end(\s+)select(\s|$)'},
         'for': {'start_pattern': r'(^|\s)for(\s+)', 'end_pattern': r'(^|\s)next(\s|$)'},
         'do': {'start_pattern': r'(^|\s)do(\s+)', 'end_pattern': r'(^|\s)loop(\s|$)'},
         'with': {'start_pattern': r'(^|\s)with(\s+)', 'end_pattern': r'(^|\s)end(\s+)with(\s|$)'},
-        'property': {'start_pattern': r'(^|\s)((private|public)\s+)?property(\s+)[a-z_][a-z0-9_]*(\(.+\))?',
+        'property': {'start_pattern': r'(^|\s)((private|public)\s+)?property(\s+)[a-z_][a-z0-9_]*\s*(\(.+\))?',
                      'end_pattern': r'(^|\s)end(\s+)property(\s|$)'},
         'class': {'start_pattern': r'(^|\s)class(\s+)', 'end_pattern': r'(^|\s)end(\s+)class(\s|$)'}
     }
@@ -129,7 +130,15 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         with open(self.input_file_path, 'w', encoding='utf-8') as input_file:
             input_file.write("\n".join(code.splitlines()))
 
-    def _handle_vbscript_command(self, code: str) -> Dict:
+    def _handle_vbscript_command(self, code: str, try_evaluate: bool = True, force_evaluate: bool = False) -> Dict:
+        inspect_prefix = 'oInterpreter.HandleInspect '
+        if not try_evaluate and force_evaluate:
+            return {'stderr': 'Error: cant force_evaluate and not try_evaluate'}
+        should_evaluate = False
+        if try_evaluate or force_evaluate:
+            if force_evaluate or self._should_evaluate(code):
+                should_evaluate = True
+                code = f'{inspect_prefix}{code}'
         self._send_command(code)
         while not os.path.exists(self.stderr_file_path):
             time.sleep(1)
@@ -138,6 +147,9 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
             output['stderr'] = stderr_file.read()
         os.remove(self.stderr_file_path)
         output['stdout'] = self._get_stdout()
+        if not force_evaluate and should_evaluate and output.get('stderr', False):
+            code = code.replace(inspect_prefix, '')
+            output = self._handle_vbscript_command(code, try_evaluate=False)
         return output
 
     def _handle_magic(self, code: str) -> Dict:
@@ -194,23 +206,24 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
 
     def _handle_code(self, code: str) -> Dict:
         output = {}
-        if code.strip().lower() in ['exit', 'exit()', 'quit', 'quit()']:
+        if code.lower() in ['exit', 'exit()', 'quit', 'quit()']:
             self._terminate_app()
-        elif code.strip().lower() in ['cls', 'clear']:
+        elif code.lower() in ['cls', 'clear']:
             os.system('cls')
-        elif code.strip().startswith('!'):
-            output = self._handle_command_line_code(code.strip()[1:])
-        elif code.strip().startswith('%'):
-            output = self._handle_magic(code.strip()[1:])
+        elif code.startswith('!'):
+            output = self._handle_command_line_code(code[1:])
+        elif code.startswith('%'):
+            output = self._handle_magic(code[1:])
+        elif code.endswith('?'):
+            output = self._handle_vbscript_command(code[:-1], force_evaluate=True)
         else:
             output = self._handle_vbscript_command(code)
         return output
 
     # pylint: disable=too-many-arguments
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
-
         self.history_manager.append(self.execution_count, code)
-        output = self._handle_code(code)
+        output = self._handle_code(code.strip())
         if not silent:
             if output.get('stdout', list()):
                 self.send_response(self.iopub_socket, 'stream', {'name': 'stdout', 'text': output['stdout']})
@@ -312,3 +325,21 @@ Y8P 888     888 888  "88b  d88P  Y88b                  Y8P          888
         parent_process = cur_process.parent()
         parent_process.terminate()
         cur_process.terminate()
+
+    @staticmethod
+    def _should_evaluate(code: str) -> bool:
+        method = r'(^|\s)((private|public)\s+)?(property|function|sub)(\s+)([a-z_][a-z0-9_]*)\s*(\(.+\))?'
+        class_pattern = r'(^|\s)class(\s+)([a-z_][a-z0-9_]*)'
+        dim = r'dim(\s*)(([a-z_][a-z0-9_]*)[,]?)+'
+        object_pattern = r'(^|\s)set(\s+)([a-z_][a-z0-9_]*)(\s*)[=]'
+        var = r'(^|\s+)([a-z_][a-z0-9_]*)(\s*)[=]'
+        sub_call = r'([a-z_][a-z0-9_]*)\s+([a-z_][a-z0-9_]*|".*"|\d+|-\d+)'
+        patterns = [method, class_pattern, dim, object_pattern, var, sub_call]
+
+        for pattern in patterns:
+            search_results = re.search(pattern, code, re.IGNORECASE)
+            if search_results:
+                if pattern == var:
+                    if '(' not in code.split('=')[0]:
+                        return False
+        return True

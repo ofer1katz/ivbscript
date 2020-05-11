@@ -45,7 +45,7 @@ jupyter console --kernel vbscript
 - `%file <file_path>` - read `<file_path>` and run the content as VBScript code
 - `%paste` - paste and execute
 
-####If you are having this error:
+#### If you are having this error:
 ```python
 Unhandled exception in event loop:
   File "c:\users\USER\appdata\local\programs\python\python38-32\lib\asyncio\proactor_events.py", line 768, in _loop_self_reading
